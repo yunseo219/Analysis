@@ -1,0 +1,47 @@
+.libPaths("/home/shared/R/x86_64-pc-linux-gnu-library/4.0")
+source("/home/rebecca/code/FindModules/FindModules_NonInteractive.R")
+library(data.table)
+library(dplyr)
+library(stringr)
+
+setwd("/home/yunseo/lab_pipeline/FM")
+
+projectname <- "ABI_Hs_Microarray2"
+sampleinfo <- read.csv("../input_data/All_ABI_SampleInfo.csv", stringsAsFactors = FALSE)
+expr <- as.data.frame(fread("../input_data/All_ABI_Expression_no_ctrls.csv"))
+
+samplegroups = as.factor(sampleinfo$AdultRegion)
+
+FindModules(
+  projectname=projectname,
+  expr=expr,
+  geneinfo=c(1:2),
+  sampleindex=c(3:ncol(expr)),
+  samplegroups=samplegroups,
+  subset=NULL,
+  simMat=NULL,
+  saveSimMat=FALSE,
+  simType="Bicor",
+  beta=1,
+  overlapType="None",
+  TOtype="signed",
+  TOdenom="min",
+  MIestimator="mi.mm",
+  MIdisc="equalfreq",
+  signumType="rel",
+  iterate=TRUE,
+  signumvec=c(0.9999, 0.999, 0.99, 0.98, 0.97, 0.96, 0.95),
+  minsizevec=c(8, 10, 12, 15, 20),
+  signum=NULL,
+  minSize=NULL,
+  merge.by="ME",
+  merge.param=0.85,
+  export.merge.comp=FALSE,
+  ZNCcut=2,
+  calcSW=FALSE,
+  loadTree=FALSE,
+  writeKME=TRUE,
+  calcBigModStat=FALSE,
+  writeModSnap=TRUE
+)
+
