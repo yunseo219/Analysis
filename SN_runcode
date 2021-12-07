@@ -1,0 +1,106 @@
+.libPaths("/home/shared/R/x86_64-pc-linux-gnu-library/4.0")
+source("/home/shared/code/SampleNetworks/SampleNetwork_1.08.r")
+library(data.table) 
+library(dplyr)
+
+## SampleNetwork tutorial: https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/SampleNetwork/Sample%20Network%20R%20Tutorial%20R1.pdf
+
+setwd("/home/yunseo/lab_pipeline/SN") ## A SN project folder will be created in this directory, which is where you can find the plots produced at each step
+projectname1 <- "ABI_Hs_Microarray"
+sampleinfo1 <- read.csv("../input_data/All_ABI_SampleInfo.csv", stringsAsFactors = FALSE)
+datExprT <- as.data.frame(fread("../input_data/All_ABI_Expression_no_ctrls.csv"))
+
+## What are the different brain regions in this dataset?
+
+table(sampleinfo1$AdultRegion)
+# Amygdala BasalForebrain     Cerebellum  ChoroidPlexus      Claustrum   Diencephalon    FrontalLobe GlobusPallidus    Hippocampus 
+# 72             46            368              5             47            340            545             39            188 
+# Insula     LimbicLobe        Medulla       Midbrain  OccipitalLobe   ParietalLobe           Pons       Striatum   TemporalLobe 
+# 44            201            279            182            212            290            189            170            470 
+# WhiteMatter 
+# 15 
+
+## Let's subset to just a few regions:
+
+sampleinfo1 <- sampleinfo1[sampleinfo1$AdultRegion %in% c("Amygdala", "Cerebellum", "Striatum", "Hippocampus", "FrontalLobe"),]
+dim(sampleinfo1)
+# [1] 1343   18
+
+## ...And let's further subsample to 300 samples so SN doesn't take forever:
+
+set.seed(1)
+sampleinfo1 <- sampleinfo1[sample(seq(nrow(sampleinfo1)), 300),]
+table(sampleinfo1$AdultRegion)
+# Amygdala  Cerebellum FrontalLobe Hippocampus    Striatum 
+# 15          82         124          43          36 
+
+## Order samples by region
+sampleinfo1 <- sampleinfo1 %>% 
+  arrange(AdultRegion)
+
+## Sample order much match between sampleinfo1 and datExprT 
+datExprT <- datExprT[, c(1, 2, 3, match(sampleinfo1$SampleLabel, colnames(datExprT)))]
+all.equal(colnames(datExprT)[-c(1, 2 ,3)], sampleinfo1$SampleLabel)
+# [1] TRUE
+
+## For processing data as separate groups:
+
+# indices1 <- list(seq(2, 100), seq(101, ncol(datExprT))) ## Indices in datExprT
+# sampleinfo1$grouplabels1 <- "Tumor"
+# sampleinfo1$grouplabels1[sampleinfo1$Disease %in% "Normal"] <- "Normal"
+# grouplabels1 <- ncol(sampleinfo1) ## Column in sampleinfo1
+
+## We're going to process samples as one group, so let's create a column with the same value "All" for all samples:
+
+indices1 <- list(seq(4, ncol(datExprT))) ## Column indices of samples in datExprT for each group
+sampleinfo1$grouplabels1 <- "All" 
+grouplabels1 <- ncol(sampleinfo1) ## Column in sampleinfo1 with group labels
+
+## Technical and biological covariates:
+
+## What is the relationship between slab_num and region?
+
+sampleinfo1 %>% 
+  group_by(slab_num) %>% 
+  summarise(n_region = n_distinct(AdultRegion),
+            n_samples = n_distinct(well_id))
+
+## Not sure what slab number refers to, but some slabs have samples from only one region so we correct for it if it is in fact a batch covariate  (i.e. slab is confounded with region).
+
+btrait1 <- c(2, 4, 5, 14, 15, 17) ## Which columns in sampleinfo1 contain covariates we want to model against PC1 of datExprT?
+colnames(sampleinfo1)[btrait1]
+asfactors1 <- c(2, 4, 5, 14, 15, 17) ## Which btrait1 variables should be treated as factors?
+colnames(sampleinfo1)[asfactors1]
+
+## Rename variable:
+colnames(sampleinfo1)[grep("structure_acronym", colnames(sampleinfo1))] <- "Subregion"
+
+normalize1 <- TRUE ## Perform quantile normalization?
+skip1 <- 3 ## How many column(s) of datExprT contain feature metadata (vs. expression data)?
+samplelabels1 <- 16 ## Which column of sampleinfo1 contains sample labels?
+subgroup1 <- 17 ## Which column of sampleinfo1 descibes groups to color samples by?
+
+SampleNetwork(
+  datExprT = datExprT,
+  method1 = "correlation",
+  impute1 = FALSE,
+  subset1 = NULL,
+  skip1 = skip1,
+  indices1 = indices1,
+  subgroup1 = subgroup1,
+  sampleinfo1 = sampleinfo1,
+  samplelabels1 = samplelabels1,
+  grouplabels1 = grouplabels1,
+  fitmodels1 = TRUE,
+  whichmodel1 = "univariate",
+  whichfit1 = "pc1",
+  btrait1 = btrait1,
+  trait1 = NULL,
+  asfactors1 = asfactors1,
+  projectname1 = projectname1,
+  cexlabels = 0.7,
+  normalize1 = normalize1,
+  replacenegs1 = FALSE,
+  exportfigures1 = TRUE,
+  verbose = TRUE
+)
