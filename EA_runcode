@@ -1,0 +1,19 @@
+.libPaths("/home/shared/R/x86_64-pc-linux-gnu-library/4.0")
+source("/home/rebecca/code/GSEA/GSEAfxsV3.1.R")
+library(dplyr)
+library(GSEABase)
+
+setwd("/home/yunseo/lab_pipeline/FM/ABI_Hs_Microarray2_Modules/") ## Path to FM Directory
+
+nThreads <- 5
+geneSetDir <- "/home/shared/genesets/OurSets/"
+maxSize <- 500
+
+MyGSHGloop(kmecut1 = "topmodposbc", exclude = "none", pvalcut1 = NULL, geneSetDir = geneSetDir, maxSize = maxSize, nThreads = nThreads)
+#MyGSHGloop(kmecut1 = "topmodposfdr", exclude = "none", pvalcut1 = NULL, geneSetDir = geneSetDir, maxSize = maxSize, nThreads = nThreads)
+
+#broadSets <- getBroadSets("/wynton/home/oldhamlab/shared/GSEA/broad_sets/msigdb_v6.0.xml")
+
+#BroadGSHGloop(kmecut1 = "topmodposbc", pvalcut1 = NULL, nThreads = nThreads)
+#BroadGSHGloop(kmecut1 = "topmodposfdr", pvalcut1 = NULL, nThreads = nThreads)
+
